@@ -72,8 +72,47 @@ ubicarBarcos([], _).
 ubicarBarcos([Barco|Barcos], T) :- puedoColocar(Barco, Dir, T, F, C), ubicarBarco(Barco, Dir, T, F, C), ubicarBarcos(Barcos, T). 
 
 %completarConAgua(+?Tablero)
+% Utilizamos la funcion asignar porque por 
+% alguna razon, cuando hacemos X=~ nos tira
+% un syntax error.
+asignarUnificando(X, Atomo) :- X=Atomo.
+predicado(X) :- var(X), asignarUnificando(X, agua).
+predicado(X) :- nonvar(X).
+completarConAgua([]).
+completarConAgua([Fila|Filas]) :- maplist(predicado, Fila), completarConAgua(Filas).
 
 %golpear(+Tablero, +NumFila, +NumColumna, -NuevoTab)
+asignarIgualando(Atomo, Atomo) :- X \= Atomo.
+xxx(T, Fila, Columna) :- nth1(Fila, T, F), nth1(Columna, F, Elem), asignarIgualando(Elem, agua). 
+golpear(T, Fila, Columna, Nuevotab) :- enRango(T, Fila, Columna), NuevoTab = T, xxx(NuevoTab, Fila, Columna).
+
+%crearTablero(T, FAtacada, CAtacada, NuevoTab) :- matriz(T, F, C), forall(between(1, F, I), 
+%(between(1, C, J),  contenido(T, I, J, X), contenido(NuevoTab, I, J, X))).
+
+% No anda para todos los casos
+% En particular este: Tablero = [[o, o], [_, _], [_, o]], completarConAgua(Tablero), crearTablero(Tablero, 1, 2, T2).
+crearTablero([], FAtacada, CAtacada, []).
+crearTablero([Fila|Filas], 1, 1, [FilaACopiar|Filas]) :- length(Fila, N),
+                                                         length(FilaACopiar, N),
+                                                         nth1(1, FilaACopiar, agua),
+                                                         I is 2,
+                                                         between(I, N, K), nth1(K, Fila, Elem2), 
+                                                         nth1(K, FilaACopiar, Elem2).
+
+crearTablero([Fila|Filas], 1, CAtacada, [FilaACopiar|Filas]) :- CAtacada > 1,
+                                                                C is CAtacada-1,
+                                                                between(1, C, J), nth1(J, Fila, Elem), 
+                                                                nth1(J, FilaACopiar, Elem), 
+                                                                nth1(CAtacada, FilaACopiar, agua), 
+                                                                I is CAtacada+1,
+                                                                length(Fila, N),
+                                                                between(I, N, K), nth1(K, Fila, Elem2), 
+                                                                nth1(K, FilaACopiar, Elem2).
+crearTablero([Fila|Filas], FAtacada, CAtacada, [Fila|FilasACopiar]) :- FAtacada > 1, F is FAtacada-1, crearTablero(Filas, F, CAtacada, FilasACopiar).
+
+%crearTablero(T, FAtacada, CAtacada, NuevoTab) :- matriz(T, F, C), forall(between(1, F, I), 
+%(between(1, C, J), I \= FAtacada, J \= CAtacada, contenido(T, I, J, X), contenido(NuevoTab, I, J, X))).
+%contenido(T, F, C, Cont) :- nth1(F, T, Fila), nth1(C, Fila, Elem), nonvar(Cont), Elem==Cont.
 
 % Completar instanciación soportada y justificar.
 %atacar(Tablero, Fila, Columna, Resultado, NuevoTab)
@@ -102,5 +141,7 @@ test(13) :- disponible([[_,_, _], [_,_, o], [o,o, o]], 1, 1).
 
 % tests puedoColocar
 test(14) :- matriz(M,2,4), puedoColocar(3,Dir,M,F,C).
+
+% Faltan tests
 
 tests :- forall(between(1,14,N), test(N)). % Cambiar el 2 por la cantidad de tests que tengan.
