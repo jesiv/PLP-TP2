@@ -44,12 +44,24 @@ puedoColocar(Cpiezas, vertical, T, F, C) :- disponible(T, F, C),
                                             puedoColocar(RemainingPieces, vertical, T, NextRow, C).
 
 
-%ubicarbarco anda cuando la dir está instanciada
-ubicarBarco(0, _, _, _, _).
+% Esto esta logrado de una manera fea. Si el caso base (CantPiezas = 1) no tiene
+% hardcodeada la direccion (vertical u horizontal) entonces se cumple 
+% para una pieza con direccion horizontal o vertical. Esto inevitablemente genera
+% repetidos. La manera en la cual salvamos esto, es teniendo dos casos bases.
+% Uno para cuando se estaba poniendo un barco de CantPiezas >= 2, con caso 
+% base CantPiezas = 2, y otro para cuando se estaba poniendo un barco de 
+% una sola pieza (al cual le hardcodeamos la Dir vertical para que no genere repetidos).
+ubicarBarco(1, vertical, T, F, C) :- disponible(T, F, C), contenido(T, F, C, o).
+ubicarBarco(2, horizontal, T, F, C) :- contenido(T, F, C, o),
+                                       NextColumn is C+1,
+                                       contenido(T, F, NextColumn, o).
 ubicarBarco(Cpiezas, horizontal, T, F, C) :- contenido(T, F, C, o),
                                              RemainingPieces is Cpiezas-1,
                                              NextColumn is C+1,
                                              ubicarBarco(RemainingPieces, horizontal, T, F, NextColumn).
+ubicarBarco(2, vertical, T, F, C) :- contenido(T, F, C, o),
+                                     NextRow is F+1,
+                                     contenido(T, NextRow, C, o).
 ubicarBarco(Cpiezas, vertical, T, F, C) :-  contenido(T, F, C, o), 
                                             RemainingPieces is Cpiezas-1,
                                             NextRow is F+1,
