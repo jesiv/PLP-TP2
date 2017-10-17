@@ -122,7 +122,7 @@ crearTablero([Fila|Filas], FAtacada, CAtacada, [Fila|FilasACopiar]) :- FAtacada 
 %test(1) :- matriz(M,2,3), adyacenteEnRango(M,2,2,2,3).
 %test(2) :- matriz(M,2,3), setof((F,C), adyacenteEnRango(M,1,1,F,C), [ (1, 2), (2, 1), (2, 2)]).
 %test(3) :- T = matriz([[_, _, 'o'],[_, _, _]],_,_), contenido(T, 1, 3, 'o').
-% tests contenido
+% Tests contenido
 test(1) :- contenido([[_, _, o],[_, _, _]], 1, 3, o).
 test(2) :- matriz(M,2,3), contenido(M, 1, 3, o), contenido(M, 1, 3, o).
 test(3) :- matriz(M,2,3), contenido(M, 1, 3, o), not(contenido(M, 1, 3, a)).
@@ -131,7 +131,7 @@ test(5) :- contenido([[_, _, l],[_, _, _]], 1, 3, C), C==l.
 test(6) :- contenido([[_, _, l],[_, _, _]], 1, 3, C), nonvar(C).
 test(7) :- contenido([[_, _, _],[_, _, _]], 1, 3, C), var(C).
 
-% tests disponible
+% Tests disponible
 test(8) :- not(disponible([[_, _, o],[_, _, _]], 2, 2)).
 test(9) :- disponible([[_,_, _],[_,_, _]], 2, 2).
 test(10) :- disponible([[_,_, _], [_,_, _], [_,_, _]], 2, 2).
@@ -139,9 +139,35 @@ test(11) :- disponible([[_,_, _], [_,_, _], [o,o, o]], 1, 1).
 test(12) :- not(disponible([[o,_, _], [_,_, _], [o,o, o]], 1, 1)).
 test(13) :- disponible([[_,_, _], [_,_, o], [o,o, o]], 1, 1).
 
-% tests puedoColocar
-test(14) :- matriz(M,2,4), puedoColocar(3,Dir,M,F,C).
+% Tests puedoColocar
+%test(14) :- matriz(M, 2, 4), puedoColocar(3, _, _, _, _).
+test(14) :- matriz(M, 2, 2), puedoColocar(1, horizontal, M, 1, 1).
+test(15) :- matriz(M, 2, 2), not( puedoColocar(3, horizontal, M, 1, 1) ).
+test(16) :- M= not( puedoColocar(3, vertical, [[_,_,_], [_,o,_], [_,_,_]], 0, 0)).
 
-% Faltan tests
+% Tests ubicarBarco
+%ubicarBarco(Cpiezas, horizontal, T, F, C)
+test(17) :- matriz(M,3,3), ubicarBarco(2, horizontal, M, 1, 1), contenido(M, 1, 1, Y), Y==o.
+test(18) :- matriz(M,3,3), contenido(M, 1, 2, o), ubicarBarco(2, horizontal, M, 1, 1), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, Y==o.
+test(19) :- matriz(M,1,1), not( ubicarBarco(2, horizontal, M, 1, 1) ).
 
-tests :- forall(between(1,14,N), test(N)). % Cambiar el 2 por la cantidad de tests que tengan.
+% Queda escrito como correrlo pero da varias soluciones -> correr a mano.
+% Tests ubicarBarcos
+% matriz(M,3,2), ubicarBarcos([2,1],M).
+
+% Tests completarConAgua
+test(20) :- matriz(M,1,1), completarConAgua(M), contenido(M, 1, 1, X), X==agua.
+test(21) :- matriz(M,1,2), contenido(M, 1, 1, o), completarConAgua(M), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, Y==agua.
+
+% Tests golpear
+test(22) :- matriz(M,1,1), contenido(M, 1, 1, o), golpear(M, 1, 1, N), contenido(N, 1, 1, X), X==agua.
+test(23) :- matriz(M,1,1), completarConAgua(M), golpear(M, 1, 1, N), M==N.
+
+% Tests atacar
+test(24) :- matriz(M,1,1), contenido(M, 1, 1, o), atacar(M, 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), X==agua.
+test(25) :- matriz(M,1,2), ubicarBarco(2, horizontal, M, 1, 1), atacar(M, 1, 1, E, N), E==tocado, contenido(N, 1, 1, X), X==agua.
+test(26) :- matriz(M,1,1), completarConAgua(M), atacar(M, 1, 1, E, N), E==agua, N==M.
+test(27) :- matriz(M,1,1), not( atacar(M, 1, 1, E, N) ).
+test(28) :- atacar([[o,agua,agua], [agua,o,agua], [agua,agua,o]], 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), X==agua.
+
+tests :- forall(between(1,28,N), test(N)).

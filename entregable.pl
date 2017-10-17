@@ -15,11 +15,19 @@ adyacente(F1,C1,F1,C2) :- dif1(C1,C2).
 adyacente(F1,C1,F2,C1) :- dif1(F1,F2).
 adyacente(F1,C1,F2,C2) :- dif1(C1,C2), dif1(F1,F2).
 
+%adyacenteOrtogonal(+F1, +C1, ?F2, ?C2)
+% -------------- Consultar si se puede hacer esto --------------
+adyacenteOrtogonal(F1,C1,F1,C2) :- dif1(C1,C2).
+adyacenteOrtogonal(F1,C1,F2,C1) :- dif1(F1,F2).
+
 %enRango(+Matriz, +Fila, +Columna)
 enRango([Fila|Filas], F, C) :- F > 0, C > 0, length([Fila|Filas], FMax), F =< FMax, length(Fila, CMax), C =< CMax.
 
 %adyacenteEnRango(+Tablero, +F1, +C1, ?F2, ?C2)
 adyacenteEnRango(T,F1,C1,F2,C2) :- adyacente(F1,C1,F2,C2), enRango(T,F2,C2).
+
+%adyacenteEnRango(+Tablero, +F1, +C1, ?F2, ?C2)
+adyacenteOrtogonalEnRango(T,F1,C1,F2,C2) :- adyacenteOrtogonal(F1,C1,F2,C2), enRango(T,F2,C2).
 
 %------------------Predicados a definir:------------------%
 
@@ -97,7 +105,7 @@ golpear(T, FAtacada, CAtacada, NuevoTab) :- enRango(T, FAtacada, CAtacada), crea
 
 %atacar(+Tablero,+NumFila,+NumColumna,-Resultado,-NuevoTab)
 rodeadoPorAgua(T, F, C) :- contenido(T, F, C, Elem), Elem == agua,
-                           forall(adyacenteEnRango(T, F, C, F2, C2), (contenido(T, F2, C2, Elemady), Elemady == agua)).
+                           forall(adyacenteOrtogonalEnRango(T, F, C, F2, C2), (contenido(T, F2, C2, Elemady), Elemady == agua)).
 
 encontrarDiferencia(T, F, C, Resultado, T2) :- contenido(T, F, C, X), X == agua, Resultado = agua.
 encontrarDiferencia(T, F, C, Resultado, T2) :- rodeadoPorAgua(T2, F, C), contenido(T, F, C, X), X == o, Resultado = hundido.
@@ -125,7 +133,7 @@ atacar(Tablero, Fila, Columna, Resultado, NuevoTab) :- golpear(Tablero, Fila, Co
 %test(1) :- matriz(M,2,3), adyacenteEnRango(M,2,2,2,3).
 %test(2) :- matriz(M,2,3), setof((F,C), adyacenteEnRango(M,1,1,F,C), [ (1, 2), (2, 1), (2, 2)]).
 %test(3) :- T = matriz([[_, _, 'o'],[_, _, _]],_,_), contenido(T, 1, 3, 'o').
-% tests contenido
+% Tests contenido
 test(1) :- contenido([[_, _, o],[_, _, _]], 1, 3, o).
 test(2) :- matriz(M,2,3), contenido(M, 1, 3, o), contenido(M, 1, 3, o).
 test(3) :- matriz(M,2,3), contenido(M, 1, 3, o), not(contenido(M, 1, 3, a)).
@@ -134,7 +142,7 @@ test(5) :- contenido([[_, _, l],[_, _, _]], 1, 3, C), C==l.
 test(6) :- contenido([[_, _, l],[_, _, _]], 1, 3, C), nonvar(C).
 test(7) :- contenido([[_, _, _],[_, _, _]], 1, 3, C), var(C).
 
-% tests disponible
+% Tests disponible
 test(8) :- not(disponible([[_, _, o],[_, _, _]], 2, 2)).
 test(9) :- disponible([[_,_, _],[_,_, _]], 2, 2).
 test(10) :- disponible([[_,_, _], [_,_, _], [_,_, _]], 2, 2).
@@ -142,9 +150,38 @@ test(11) :- disponible([[_,_, _], [_,_, _], [o,o, o]], 1, 1).
 test(12) :- not(disponible([[o,_, _], [_,_, _], [o,o, o]], 1, 1)).
 test(13) :- disponible([[_,_, _], [_,_, o], [o,o, o]], 1, 1).
 
-% tests puedoColocar
-test(14) :- matriz(M,2,4), puedoColocar(3,Dir,M,F,C).
+% Tests puedoColocar
+%test(14) :- matriz(M, 2, 4), puedoColocar(3, _, _, _, _).
+test(14) :- matriz(M, 2, 2), puedoColocar(1, horizontal, M, 1, 1).
+test(15) :- matriz(M, 2, 2), not( puedoColocar(3, horizontal, M, 1, 1) ).
+test(16) :- M= not( puedoColocar(3, vertical, [[_,_,_], [_,o,_], [_,_,_]], 0, 0)).
 
-% Faltan tests
+% Tests ubicarBarco
+%ubicarBarco(Cpiezas, horizontal, T, F, C)
+test(17) :- matriz(M,3,3), ubicarBarco(2, horizontal, M, 1, 1), contenido(M, 1, 1, Y), Y==o.
+test(18) :- matriz(M,3,3), contenido(M, 1, 2, o), ubicarBarco(2, horizontal, M, 1, 1), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, Y==o.
+test(19) :- matriz(M,1,1), not( ubicarBarco(2, horizontal, M, 1, 1) ).
 
-tests :- forall(between(1,14,N), test(N)). % Cambiar el 2 por la cantidad de tests que tengan.
+% Queda escrito como correrlo pero da varias soluciones -> correr a mano.
+% Tests ubicarBarcos
+% matriz(M,3,2), ubicarBarcos([2,1],M).
+
+% Tests completarConAgua
+test(20) :- matriz(M,1,1), completarConAgua(M), contenido(M, 1, 1, X), X==agua.
+test(21) :- matriz(M,1,2), contenido(M, 1, 1, o), completarConAgua(M), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, Y==agua.
+
+% Tests golpear
+test(22) :- matriz(M,1,1), contenido(M, 1, 1, o), golpear(M, 1, 1, N), contenido(N, 1, 1, X), X==agua.
+test(23) :- matriz(M,1,1), completarConAgua(M), golpear(M, 1, 1, N), M==N.
+
+% Tests atacar
+test(24) :- matriz(M,1,1), contenido(M, 1, 1, o), atacar(M, 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), X==agua.
+test(25) :- matriz(M,1,2), ubicarBarco(2, horizontal, M, 1, 1), atacar(M, 1, 1, E, N), E==tocado, contenido(N, 1, 1, X), X==agua.
+test(26) :- matriz(M,1,1), completarConAgua(M), atacar(M, 1, 1, E, N), E==agua, N==M.
+test(27) :- matriz(M,1,1), not( atacar(M, 1, 1, E, N) ).
+
+% En este caso fallaba -> miraba si habia en diagonal una o y daba tocado.
+% Agregue adyacenteOrtogonal para salvar el caso pero nose si es valido.
+test(28) :- atacar([[o,agua,agua], [agua,o,agua], [agua,agua,o]], 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), X==agua.
+
+tests :- forall(between(1,28,N), test(N)).
