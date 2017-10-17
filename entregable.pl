@@ -44,7 +44,7 @@ puedoColocar(Cpiezas, vertical, T, F, C) :- disponible(T, F, C),
                                             puedoColocar(RemainingPieces, vertical, T, NextRow, C).
 
 
-% Esto esta logrado de una manera fea. Si el caso base (CantPiezas = 1) no tiene
+% Si el caso base (CantPiezas = 1) no tiene
 % hardcodeada la direccion (vertical u horizontal) entonces se cumple 
 % para una pieza con direccion horizontal o vertical. Esto inevitablemente genera
 % repetidos. La manera en la cual salvamos esto, es teniendo dos casos bases.
@@ -72,10 +72,13 @@ ubicarBarcos([], _).
 ubicarBarcos([Barco|Barcos], T) :- puedoColocar(Barco, Dir, T, F, C), ubicarBarco(Barco, Dir, T, F, C), ubicarBarcos(Barcos, T). 
 
 %completarConAgua(+?Tablero)
-% Utilizamos la funcion asignar porque por 
+% Utilizamos la funcion unificar porque por 
 % alguna razon, cuando hacemos X=~ nos tira
 % un syntax error.
-predicado(X) :- var(X), X=agua.
+
+unificar(X, Atomo) :- X = Atomo.
+
+predicado(X) :- var(X), unificar(X, ~).
 predicado(X) :- nonvar(X).
 
 completarConAgua([]).
@@ -83,23 +86,23 @@ completarConAgua([Fila|Filas]) :- maplist(predicado, Fila), completarConAgua(Fil
 
 
 %golpear(+Tablero,+NumFila,+NumColumna,-NuevoTab)
-crearTablero([], FAtacada, CAtacada, []).
-crearTablero([Fila|Filas], 1, CAtacada, [FilaACopiar|Filas]) :- copiarLista(CAtacada, Fila, FilaACopiar).
-crearTablero([Fila|Filas], FAtacada, CAtacada, [Fila|FilasACopiar]) :- FAtacada > 1, F is FAtacada-1, crearTablero(Filas, F, CAtacada, FilasACopiar).
+nuevoTablero([], FAtacada, CAtacada, []).
+nuevoTablero([Fila|Filas], 1, CAtacada, [FilaACopiar|Filas]) :- cambiarElemento(CAtacada, Fila, FilaACopiar).
+nuevoTablero([Fila|Filas], FAtacada, CAtacada, [Fila|FilasACopiar]) :- FAtacada > 1, F is FAtacada-1, nuevoTablero(Filas, F, CAtacada, FilasACopiar).
 
-%copiarLista(+Posicion, +Lista, -Lista)
-copiarLista(0, XS, XS).
-copiarLista(1, [X|XS], [Y|YS]) :- Y = agua, copiarLista(0, XS, YS).
-copiarLista(Posicion, [X|XS], [X|YS]) :- Posicion > 1, NextPosicion is Posicion - 1, copiarLista(NextPosicion, XS, YS).
+%cambiarElemento(+Posicion, +Lista, -Lista)
+cambiarElemento(0, XS, XS).
+cambiarElemento(1, [X|XS], [Y|YS]) :- unificar(Y, ~), cambiarElemento(0, XS, YS).
+cambiarElemento(Posicion, [X|XS], [X|YS]) :- Posicion > 1, NextPosicion is Posicion - 1, cambiarElemento(NextPosicion, XS, YS).
 
-golpear(T, FAtacada, CAtacada, NuevoTab) :- enRango(T, FAtacada, CAtacada), crearTablero(T, FAtacada, CAtacada, NuevoTab).
+golpear(T, FAtacada, CAtacada, NuevoTab) :- enRango(T, FAtacada, CAtacada), nuevoTablero(T, FAtacada, CAtacada, NuevoTab).
 
 
 %atacar(+Tablero,+NumFila,+NumColumna,-Resultado,-NuevoTab)
-rodeadoPorAgua(T, F, C) :- contenido(T, F, C, Elem), Elem == agua,
-                           forall(adyacenteEnRango(T, F, C, F2, C2), (contenido(T, F2, C2, Elemady), Elemady == agua)).
+rodeadoPorAgua(T, F, C) :- contenido(T, F, C, Elem), Elem == ~,
+                           forall(adyacenteEnRango(T, F, C, F2, C2), (contenido(T, F2, C2, Elemady), Elemady == ~)).
 
-encontrarDiferencia(T, F, C, Resultado, T2) :- contenido(T, F, C, X), X == agua, Resultado = agua.
+encontrarDiferencia(T, F, C, Resultado, T2) :- contenido(T, F, C, X), X == ~, unificar(Resultado, ~).
 encontrarDiferencia(T, F, C, Resultado, T2) :- rodeadoPorAgua(T2, F, C), contenido(T, F, C, X), X == o, Resultado = hundido.
 encontrarDiferencia(T, F, C, Resultado, T2) :- not(rodeadoPorAgua(T2, F, C)), 
                                                contenido(T, F, C, X), X == o, Resultado = tocado.
@@ -158,18 +161,20 @@ test(19) :- matriz(M,1,1), not( ubicarBarco(2, horizontal, M, 1, 1) ).
 % Tests ubicarBarcos
 % matriz(M,3,2), ubicarBarcos([2,1],M).
 
+comparador(X, Atomo) :- X == Atomo.
+
 % Tests completarConAgua
-test(20) :- matriz(M,1,1), completarConAgua(M), contenido(M, 1, 1, X), X==agua.
-test(21) :- matriz(M,1,2), contenido(M, 1, 1, o), completarConAgua(M), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, Y==agua.
+test(20) :- matriz(M,1,1), completarConAgua(M), contenido(M, 1, 1, X), comparador(X, ~).
+test(21) :- matriz(M,1,2), contenido(M, 1, 1, o), completarConAgua(M), contenido(M, 1, 1, X), contenido(M, 1, 2, Y), X==o, comparador(Y, ~).
 
 % Tests golpear
-test(22) :- matriz(M,1,1), contenido(M, 1, 1, o), golpear(M, 1, 1, N), contenido(N, 1, 1, X), X==agua.
+test(22) :- matriz(M,1,1), contenido(M, 1, 1, o), golpear(M, 1, 1, N), contenido(N, 1, 1, X), comparador(X, ~).
 test(23) :- matriz(M,1,1), completarConAgua(M), golpear(M, 1, 1, N), M==N.
 
 % Tests atacar
-test(24) :- matriz(M,1,1), contenido(M, 1, 1, o), atacar(M, 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), X==agua.
-test(25) :- matriz(M,1,2), ubicarBarco(2, horizontal, M, 1, 1), atacar(M, 1, 1, E, N), E==tocado, contenido(N, 1, 1, X), X==agua.
-test(26) :- matriz(M,1,1), completarConAgua(M), atacar(M, 1, 1, E, N), E==agua, N==M.
+test(24) :- matriz(M,1,1), contenido(M, 1, 1, o), atacar(M, 1, 1, E, N), E==hundido, contenido(N, 1, 1, X), comparador(X, ~).
+test(25) :- matriz(M,1,2), ubicarBarco(2, horizontal, M, 1, 1), atacar(M, 1, 1, E, N), E==tocado, contenido(N, 1, 1, X), comparador(X, ~).
+test(26) :- matriz(M,1,1), completarConAgua(M), atacar(M, 1, 1, E, N), comparador(E, ~), N==M.
 test(27) :- matriz(M,1,1), not( atacar(M, 1, 1, E, N) ).
 
 tests :- forall(between(1,27,N), test(N)).
